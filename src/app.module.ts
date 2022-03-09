@@ -3,12 +3,12 @@ import { TaskModule } from './task/task.module';
 import { UserModule } from './user/user.module';
 import { PostModule } from './post/post.module';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(
-      'mongodb+srv://user123:user123@restapi.5gh7f.mongodb.net/nestjs-restapi?retryWrites=true&w=majority',
-    ),
+    ConfigModule.forRoot(),
+    MongooseModule.forRoot(process.env.CONNECT_DB),
     TaskModule,
     UserModule,
     PostModule,
