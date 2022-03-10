@@ -7,6 +7,8 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -17,6 +19,7 @@ import {
   updatingUser,
   validUser,
 } from './dto/getuserfilter.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('user')
 export class UserController {
@@ -57,5 +60,11 @@ export class UserController {
   @Delete('/:id')
   async deleteuser(@Param('id') id: string) {
     return await this.userservice.deleteuser(id);
+  }
+
+  @Post('/test')
+  @UseGuards(AuthGuard())
+  test(@Req() req) {
+    console.log(req);
   }
 }

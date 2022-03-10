@@ -6,6 +6,7 @@ export interface User {
   email: string;
   password: string;
   date: Date;
+  salt: string;
 }
 
 export const UserData = new mongoose.Schema({
@@ -13,4 +14,5 @@ export const UserData = new mongoose.Schema({
   email: { type: String, required: true },
   password: { type: String, required: true },
   date: { type: Date, default: Date.now },
+  salt: { type: String },
 });

@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -12,10 +13,15 @@ import {
   updatingUser,
   validUser,
 } from './dto/getuserfilter.dto';
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel('User') private UserData: Model<User>) {}
+  constructor(
+    @InjectModel('User') private UserData: Model<User>,
+    private jwtservice: JwtService,
+  ) {}
 
   async getallUser() {
     const user = await this.UserData.find().exec();
@@ -58,10 +64,13 @@ export class UserService {
   async addUser(addinguser: addUser) {
     const { name, email, password } = addinguser;
 
+    const salting = await bcrypt.genSalt();
+
     const user = new this.UserData({
       name,
       email,
-      password,
+      salt: salting,
+      password: await this.hashpassword(password, salting),
     });
 
     const exist = await this.UserData.findOne({ email: user.email });
@@ -74,7 +83,6 @@ export class UserService {
       id: use.id,
       name: use.name,
       email: use.email,
-      password: use.password,
       date: use.date,
     };
   }
@@ -109,6 +117,10 @@ export class UserService {
     return user;
   }
 
+  private async hashpassword(password: string, salt: string) {
+    return bcrypt.hash(password, salt);
+  }
+
   async deleteuser(id: string) {
     await this.finduser(id);
     const result = await this.UserData.deleteOne({ _id: id }).exec();
@@ -119,11 +131,15 @@ export class UserService {
 
   async validinguser(validuser: validUser) {
     const { email, password } = validuser;
-    const user = await this.UserData.findOne({ email: email }).exec();
+    const user = await this.UserData.findOne({ email }).exec();
     if (user) {
-      if (user.password === password) return 'Login Successful';
-      return 'Invalid Password';
+      if (!(user.password === (await this.hashpassword(password, user.salt)))) {
+        throw new UnauthorizedException('Invalid Password');
+      }
+      const access = user.email;
+      const token = await this.jwtservice.sign({ access });
+      return { accesstoken: token };
     }
-    return 'Invalid User';
+    throw new UnauthorizedException('Invalid User');
   }
 }
