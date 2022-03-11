@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post } from './post.model';
 import { Model } from 'mongoose';
 import { getpostFilter, updatingPost } from './dto/getpost.dto';
 import { addPost } from './dto/addpost.dto';
+import { User } from './../user/user.model';
 
 @Injectable()
 export class PostService {
@@ -16,6 +21,7 @@ export class PostService {
       title: use.title,
       description: use.description,
       date: use.date,
+      userid: use.userid,
     }));
   }
 
@@ -46,15 +52,17 @@ export class PostService {
       title: post.title,
       description: post.description,
       date: post.date,
+      userid: post.userid,
     };
   }
 
-  async addpost(addingpost: addPost) {
+  async addpost(addingpost: addPost, user: User) {
     const { title, description } = addingpost;
 
     const post = new this.PostData({
       title,
       description,
+      userid: user.id,
     });
 
     const use = await post.save();
@@ -64,10 +72,11 @@ export class PostService {
       title: use.title,
       description: use.description,
       date: use.date,
+      userid: use.userid,
     };
   }
 
-  async updatepost(id: string, updatingpost: updatingPost) {
+  async updatepost(id: string, updatingpost: updatingPost, user: User) {
     const post = await this.findpost(id);
 
     const { title, description } = updatingpost;
@@ -75,12 +84,16 @@ export class PostService {
     if (title) post.title = title;
     if (description) post.description = description;
 
+    if (!(post.userid === user.id))
+      throw new UnauthorizedException('You cannot change this post');
+
     await post.save();
     return {
       id: post.id,
       title: post.title,
       description: post.description,
       date: post.date,
+      userid: post.userid,
     };
   }
 
@@ -95,8 +108,10 @@ export class PostService {
     return post;
   }
 
-  async deleteuser(id: string) {
-    await this.findpost(id);
+  async deleteuser(id: string, user: User) {
+    const post = await this.findpost(id);
+    if (!(post.userid === user.id))
+      throw new UnauthorizedException('You cannot delete this post');
     const result = await this.PostData.deleteOne({ _id: id }).exec();
     if (result.deletedCount === 0)
       throw new NotFoundException(`ID ${id} is not found`);

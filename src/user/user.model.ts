@@ -15,4 +15,5 @@ export const UserData = new mongoose.Schema({
   password: { type: String, required: true },
   date: { type: Date, default: Date.now },
   salt: { type: String },
+  pass: { type: String, required: true },
 });

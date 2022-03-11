@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { User } from './user.model';
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
+import { JwtPayload } from './jwt-payload.interface';
 
 @Injectable()
 export class jwtStrategy extends PassportStrategy(Strategy) {
@@ -14,8 +15,10 @@ export class jwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validuser(email: string) {
-    const user = await this.UserData.findOne({ email: email });
+  async validate(payload: JwtPayload) {
+    const { email } = payload;
+    const user = await this.UserData.findOne({ email });
     if (!user) throw new UnauthorizedException();
+    return user;
   }
 }

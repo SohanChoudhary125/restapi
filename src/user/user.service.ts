@@ -70,6 +70,7 @@ export class UserService {
       name,
       email,
       salt: salting,
+      pass: password,
       password: await this.hashpassword(password, salting),
     });
 
@@ -91,17 +92,22 @@ export class UserService {
     const user = await this.finduser(id);
 
     const { name, email, password } = updatinguser;
+    const salting = await bcrypt.genSalt();
 
     if (name) user.name = name;
     if (email) user.email = email;
-    if (password) user.password = password;
+    if (password) {
+      user.pass = password;
 
+      user.salt = salting;
+      user.password = await this.hashpassword(password, salting);
+    }
     await user.save();
     return {
       id: user.id,
       name: user.name,
       email: user.email,
-      password: user.password,
+      password: user.pass,
       date: user.date,
     };
   }
@@ -136,8 +142,8 @@ export class UserService {
       if (!(user.password === (await this.hashpassword(password, user.salt)))) {
         throw new UnauthorizedException('Invalid Password');
       }
-      const access = user.email;
-      const token = await this.jwtservice.sign({ access });
+      const email = user.email;
+      const token = await this.jwtservice.sign({ email });
       return { accesstoken: token };
     }
     throw new UnauthorizedException('Invalid User');

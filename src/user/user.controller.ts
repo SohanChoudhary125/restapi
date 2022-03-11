@@ -7,7 +7,6 @@ import {
   Patch,
   Post,
   Query,
-  Req,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -26,6 +25,7 @@ export class UserController {
   constructor(private userservice: UserService) {}
 
   @Get()
+  @UseGuards(AuthGuard())
   async getuser(@Query(ValidationPipe) filleruser: getUserFilter) {
     if (Object.keys(filleruser).length)
       return await this.userservice.getbyfilter(filleruser);
@@ -60,11 +60,5 @@ export class UserController {
   @Delete('/:id')
   async deleteuser(@Param('id') id: string) {
     return await this.userservice.deleteuser(id);
-  }
-
-  @Post('/test')
-  @UseGuards(AuthGuard())
-  test(@Req() req) {
-    console.log(req);
   }
 }
